@@ -12,19 +12,23 @@ contract("Voting tests", accounts => {
     let votingInstance;
 
     describe("Add voters", () => {
+        // Create a new instance of voting contract
         before(async () => {
             votingInstance = await Voting.new({ from: owner });
         });
 
+        it("Should start at first workflow status", async () => {
+            expect(await votingInstance.workflowStatus()).to.bignumber.equal(new BN(0));
+        });
+
         it("Should add voters", async () => {
             await votingInstance.addVoter(user1, { from: owner });
-            let user2Data = await votingInstance.getVoter(user2, { from: user1 });
+            let user2Data = await votingInstance.getVoter.call(user2, { from: user1 });
             expect(user2Data.isRegistered).to.be.equal(false);
 
             await votingInstance.addVoter(user2, { from: owner });
-            user2Data = await votingInstance.getVoter(user2, { from: user1 });
+            user2Data = await votingInstance.getVoter.call(user2, { from: user1 });
             expect(user2Data.isRegistered).to.be.equal(true);
-            expect(await votingInstance.workflowStatus()).to.bignumber.equal(new BN(0));
         });
 
         it("Should emit an event adding a voter", async () => {
@@ -42,6 +46,10 @@ contract("Voting tests", accounts => {
     });
 
     describe("Get a voter", () => {
+        /**
+         * Create a new instance of voting contract
+         * Add 3 voters from seed addresses
+         */
         before(async () => {
             votingInstance = await Voting.new({ from: owner });
             for (n = 1; n <= 3; n ++) {
@@ -50,10 +58,10 @@ contract("Voting tests", accounts => {
         });
 
         it("Should get a voter", async () => {
-            const user2Data = await votingInstance.getVoter(user2, { from: user1 });
+            const user2Data = await votingInstance.getVoter.call(user2, { from: user1 });
             expect(user2Data.isRegistered).to.be.equal(true);
             expect(user2Data.hasVoted).to.be.equal(false);
-            expect(user2Data.votedProposalId).to.be.bignumber.equal(new BN(0));
+            expect(new BN(user2Data.votedProposalId)).to.be.bignumber.equal(new BN(0));
         });
 
         it("Should revert getting a voter from unregistered address", async () => {
@@ -62,6 +70,10 @@ contract("Voting tests", accounts => {
     });
 
     describe("Add proposals", () => {
+        /**
+         * Create a new instance of voting contract
+         * Add 4 voters from seed addresses
+         */
         before(async () => {
             votingInstance = await Voting.new({ from: owner });
             for (n = 1; n <= 4; n ++) {
@@ -93,6 +105,12 @@ contract("Voting tests", accounts => {
     });
 
     describe("Get a proposal", () => {
+        /**
+         * Create a new instance of voting contract
+         * Add 3 voters from seed addresses
+         * Start proposals registration
+         * Add 3 proposals from added voters
+         */
         before(async () => {
             votingInstance = await Voting.new({ from: owner });
             for (n = 1; n <= 3; n ++) {
@@ -105,7 +123,7 @@ contract("Voting tests", accounts => {
         });
 
         it("Should get a proposal", async () => {
-            proposalData = await votingInstance.getOneProposal(0, { from: user2 })
+            proposalData = await votingInstance.getOneProposal.call(0, { from: user2 })
             expect(proposalData.description).to.equal("Revolution-1");
         });
 
@@ -115,6 +133,13 @@ contract("Voting tests", accounts => {
     });
 
     describe("Set vote", () => {
+        /**
+         * Create a new instance of voting contract
+         * Add 4 voters from seed addresses
+         * Start proposals registration
+         * Add 4 proposals from added voters
+         * End proposals registration
+         */
         before(async () => {
             votingInstance = await Voting.new({ from: owner });
             for (n = 1; n <= 4; n ++) {
@@ -145,27 +170,31 @@ contract("Voting tests", accounts => {
         });
 
         it("Should increment voteCount on a proposal", async () => {
-            proposalData = await votingInstance.getOneProposal(1, { from: user3 })
-            expect(proposalData.voteCount).to.bignumber.equal(new BN(0));
+            proposalData = await votingInstance.getOneProposal.call(1, { from: user3 })
+            expect(new BN(proposalData.voteCount)).to.bignumber.equal(new BN(0));
 
             await votingInstance.setVote(1, { from: user3 })
-            proposalData = await votingInstance.getOneProposal(1, { from: user3 })
-            expect(proposalData.voteCount).to.bignumber.equal(new BN(1));
+            proposalData = await votingInstance.getOneProposal.call(1, { from: user3 })
+            expect(new BN(proposalData.voteCount)).to.bignumber.equal(new BN(1));
         });
 
         it("Should revert voting for invalid proposal id", async () => {
             await expectRevert(votingInstance.setVote(99, { from: user4 }), "Proposal not found");
         });
 
+        it("Should revert voting when proposal id equals to proposalsArray length", async () => {
+            await expectRevert(votingInstance.setVote(4, { from: user4 }), "Panic: Index out of bounds");
+        });
+
         it("Should update voted proposal id after voting", async () => {
-            let user4Data = await votingInstance.getVoter(user4, { from: user1 })
+            let user4Data = await votingInstance.getVoter.call(user4, { from: user1 })
             expect(user4Data.hasVoted).to.equal(false);
-            expect(user4Data.votedProposalId).to.be.bignumber.equal(new BN(0));
+            expect(new BN(user4Data.votedProposalId)).to.be.bignumber.equal(new BN(0));
 
             await votingInstance.setVote(2, { from: user4 })
-            user4Data = await votingInstance.getVoter(user4, { from: user1 })
+            user4Data = await votingInstance.getVoter.call(user4, { from: user1 })
             expect(user4Data.hasVoted).to.equal(true);
-            expect(user4Data.votedProposalId).to.be.bignumber.equal(new BN(2));
+            expect(new BN(user4Data.votedProposalId)).to.be.bignumber.equal(new BN(2));
         });
 
         it("Should revert voting from unregistered address", async () => {
@@ -174,6 +203,15 @@ contract("Voting tests", accounts => {
     });
 
     describe("Tally votes", () => {
+        /**
+         * Create a new instance of voting contract
+         * Add 5 voters from seed addresses
+         * Start proposals registration
+         * Add 5 proposals from added voters
+         * End proposals registration
+         * Start voting session
+         * Set vote using n % 2 to distribute the votes
+         */
         beforeEach(async () => {
             votingInstance = await Voting.new({ from: owner });
             for (n = 1; n <= 5; n ++) {
