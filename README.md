@@ -15,7 +15,7 @@ npm install ganache-cli
 npm install eth-gas-reporter
 ```
 
-## Run units Tests
+## Run unit tests
 
 ```
 // Run ganache
