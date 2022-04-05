@@ -28,7 +28,7 @@ truffle migrate
 truffle test
 ```
 
-> 27 passing tests
+> 28 passing tests
 
 *All the contract functions are tested.*
 
@@ -51,6 +51,7 @@ truffle test
 
 - Should **revert** adding proposal before proposal registration ✔
 - Should **add** a proposal ✔
+- Should **add** another proposal from the same user ✔
 - Should **emit** an event adding a proposal ✔
 - Should **revert** adding proposal without description ✔
 - Should **revert** adding proposal from unregistered address ✔

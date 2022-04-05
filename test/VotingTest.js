@@ -91,8 +91,12 @@ contract("Voting tests", accounts => {
             expect(await votingInstance.workflowStatus()).to.bignumber.equal(new BN(1));
         });
 
+        it("Should add another proposal from the same user", async () => {
+            await votingInstance.addProposal("This is another revolution", { from: user1 });
+        });
+
         it("Should emit an event adding a proposal", async () => {
-            expectEvent(await votingInstance.addProposal("This is a big revolution", { from: user3 }), "ProposalRegistered", { proposalId: new BN(1) });
+            expectEvent(await votingInstance.addProposal("This is a big revolution", { from: user3 }), "ProposalRegistered", { proposalId: new BN(2) });
         });
 
         it("Should revert adding proposal without description", async () => {
